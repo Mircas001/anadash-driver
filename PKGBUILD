@@ -12,25 +12,26 @@ arch=('i686' 'x86_64' 'armv6h' 'armv7h')
 source=()
 b2sums=()
 
-_package_dir="$srcdir/repo/software/firmware"
+_source_dir="repo/software/driver"
 
 prepare() {
-    _repo_url="https://github.com/Mircas001/AnaDash.git"
     msg2 "Performing sparse checkout..."
+    git clone --filter=blob:none --no-checkout https://github.com/Mircas001/AnaDash.git "$srcdir/repo"
 
-    git clone --filter=blob:none --no-checkout "$_repo_url" "$srcdir/repo"
     cd "$srcdir/repo"
     git sparse-checkout init --cone
     git sparse-checkout set software
     git checkout main
 
-    cd "$_package_dir"
+    rm -rf "$srcdir/repo/software/firmware"
+    
+    cd "$srcdir/$_source_dir"
     export RUSTUP_TOOLCHAIN=stable
     cargo fetch --locked --target host-tuple
 }
 
 build() {
-    cd "$_package_dir"
+    cd "$srcdir/$_source_dir"
     export RUSTUP_TOOLCHAIN=stable
     export CARGO_TARGET_DIR=target
     cargo build --frozen --release --all-features
@@ -41,9 +42,18 @@ check() {
 }
 
 package() {
-    install -Dm0755 -t "$pkgdir/usr/bin/" "$package_dir/target/release/$pkgname"
+    install -Dm0755 -t "$pkgdir/usr/bin/" "$_source_dir/target/release/$pkgname"
 
-    install -Dm644 "$_package_dir/99-anadash.rules"  "$pkgdir/usr/lib/udev/rules.d/99-anadash.rules"
+    install -Dm644 "$_source_dir/99-anadash.rules"  "$pkgdir/usr/lib/udev/rules.d/99-anadash.rules"
 
-    install -Dm644 "$_package_dir/anadash-driver@.service" "$pkgdir/usr/lib/systemd/system/anadash-driver@.service"
+    install -Dm644 "$_source_dir/anadash-driver@.service" "$pkgdir/usr/lib/systemd/system/anadash-driver@.service"
+}
+
+post_install() {
+    udevadm control --reload-rules
+    systemctl daemon-reload
+}
+
+post_upgrade() {
+    post_install
 }
