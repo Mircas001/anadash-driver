@@ -12,7 +12,7 @@ arch=('i686' 'x86_64' 'armv6h' 'armv7h')
 source=()
 b2sums=()
 
-_source_dir="repo/software/driver"
+_source_dir="repo/software/anadash-driver"
 
 prepare() {
     msg2 "Performing sparse checkout..."
